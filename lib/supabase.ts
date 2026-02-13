@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient, SupabaseClient } from "@supabase/supabase-js"
 
 type Database = {
   public: {
@@ -12,25 +12,28 @@ type Database = {
           created_at: string
         }
         Insert: {
+          id?: string
           title: string
           url: string
           user_id: string
+          created_at?: string
         }
         Update: {
+          id?: string
           title?: string
           url?: string
           user_id?: string
+          created_at?: string
         }
       }
     }
   }
 }
 
-let supabaseInstance:
-  | ReturnType<typeof createClient<Database>>
-  | null = null
 
-export function getSupabaseClient() {
+let supabaseInstance: SupabaseClient<Database> | null = null
+
+export function getSupabaseClient(): SupabaseClient<Database> {
   if (!supabaseInstance) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

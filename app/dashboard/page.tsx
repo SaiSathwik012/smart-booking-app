@@ -17,13 +17,7 @@ type Bookmark = {
   title: string
   url: string
   user_id: string
-  created_at?: string
-}
-
-type BookmarkInsert = {
-  title: string
-  url: string
-  user_id: string
+  created_at: string
 }
 
 type AuthUser = {
@@ -67,7 +61,7 @@ export default function Dashboard() {
 
       if (error) toast.error("Failed to load bookmarks")
 
-      setBookmarks((bookmarksData as Bookmark[]) || [])
+      setBookmarks(bookmarksData ?? [])
       setLoading(false)
 
       channel = supabase
@@ -87,7 +81,7 @@ export default function Dashboard() {
               .eq("user_id", currentUser.id)
               .order("created_at", { ascending: false })
 
-            setBookmarks((data as Bookmark[]) || [])
+            setBookmarks(data ?? [])
           }
         )
         .subscribe()
@@ -120,15 +114,15 @@ export default function Dashboard() {
 
     setSubmitting(true)
 
-    const newBookmark: BookmarkInsert = {
-      title: title.trim(),
-      url: formattedUrl,
-      user_id: user.id,
-    }
-
     const { error } = await supabase
       .from("bookmarks")
-      .insert([newBookmark])
+      .insert([
+        {
+          title: title.trim(),
+          url: formattedUrl,
+          user_id: user.id,
+        },
+      ])
 
     if (error) {
       toast.error("Failed to add bookmark")
