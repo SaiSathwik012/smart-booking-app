@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseClient } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import {
   BookmarkIcon,
@@ -26,14 +26,15 @@ type AuthUser = {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
+  const supabase = getSupabaseClient()
+
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [title, setTitle] = useState<string>("")
-  const [url, setUrl] = useState<string>("")
-  const [loading, setLoading] = useState<boolean>(true)
-  const [submitting, setSubmitting] = useState<boolean>(false)
-
-  const router = useRouter()
+  const [title, setTitle] = useState("")
+  const [url, setUrl] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null
@@ -91,16 +92,14 @@ export default function Dashboard() {
     return () => {
       if (channel) supabase.removeChannel(channel)
     }
-  }, [router])
+  }, [router, supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.replace("/") // prevents back navigation
+    router.replace("/")
   }
 
-  const addBookmark = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const addBookmark = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!user || !title.trim() || !url.trim()) {
@@ -134,10 +133,7 @@ export default function Dashboard() {
     setSubmitting(false)
   }
 
-  const deleteBookmark = async (
-    id: string,
-    bookmarkTitle: string
-  ) => {
+  const deleteBookmark = async (id: string, bookmarkTitle: string) => {
     if (!confirm(`Delete "${bookmarkTitle}"?`)) return
 
     const { error } = await supabase
@@ -152,10 +148,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-600">Loading bookmarks...</p>
-        </div>
+        <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -164,127 +157,83 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
       <Toaster position="top-right" />
 
-      {/* Header */}
       <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <BookmarkIcon className="w-5 h-5 text-slate-900" />
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+            <h1 className="text-xl font-semibold text-slate-900">
               Smart Bookmark App
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:block text-sm text-slate-500 truncate max-w-[200px]">
-              {user?.email}
-            </span>
-            <button
-              onClick={handleSignOut}
-              className="text-sm text-slate-600 hover:text-slate-900 transition"
-            >
-              Sign out
-            </button>
-          </div>
+          <button
+            onClick={handleSignOut}
+            className="text-sm text-slate-600 hover:text-slate-900 transition"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-10">
-        {/* Add Bookmark */}
+      <main className="flex-1 max-w-4xl mx-auto px-4 py-8 flex flex-col gap-8">
         <form onSubmit={addBookmark}>
-          <div className="bg-white border border-slate-200 rounded-lg p-5 sm:p-6 flex flex-col gap-5">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
-              Add Bookmark
-            </h2>
+          <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col gap-4 sm:flex-row">
+            <input
+              type="text"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="flex-1 px-4 py-2 border border-slate-300 rounded-md"
+            />
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="text"
-                placeholder="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={submitting}
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
+            <input
+              type="text"
+              placeholder="https://example.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="flex-1 px-4 py-2 border border-slate-300 rounded-md"
+            />
 
-              <div className="relative flex-1">
-                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  disabled={submitting}
-                  className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-6 py-2.5 rounded-md transition whitespace-nowrap"
-              >
-                {submitting ? "Adding..." : "Add"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="bg-slate-900 text-white px-6 py-2 rounded-md"
+            >
+              Add
+            </button>
           </div>
         </form>
 
-        {/* Collection */}
-        <section className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
-              Your Collection
-            </h2>
-            <span className="text-sm text-slate-500">
-              {bookmarks.length} total
-            </span>
-          </div>
-
-          {bookmarks.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
-              <h3 className="text-lg font-medium text-slate-900">
-                Nothing saved yet
-              </h3>
-              <p className="text-sm text-slate-500 mt-2">
-                Add your first bookmark to start building your collection.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {bookmarks.map((bookmark) => (
-                <div
-                  key={bookmark.id}
-                  className="bg-white border border-slate-200 rounded-lg px-4 sm:px-5 py-4 hover:border-slate-300 hover:-translate-y-[1px] transition-all duration-150 flex items-center justify-between gap-4"
+        <div className="flex flex-col gap-3">
+          {bookmarks.map((bookmark) => (
+            <div
+              key={bookmark.id}
+              className="bg-white border border-slate-200 rounded-lg px-5 py-4 flex justify-between items-center"
+            >
+              <div className="flex-1 min-w-0">
+                <a
+                  href={bookmark.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-slate-900 hover:underline truncate"
                 >
-                  <div className="flex-1 min-w-0 border-l-2 border-slate-900 pl-4">
-                    <a
-                      href={bookmark.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-slate-900 hover:underline flex items-center gap-1 truncate"
-                    >
-                      {bookmark.title}
-                      <ArrowTopRightOnSquareIcon className="w-4 h-4 text-slate-400 shrink-0" />
-                    </a>
+                  {bookmark.title}
+                </a>
+                <p className="text-sm text-slate-500 truncate">
+                  {bookmark.url.replace(/^https?:\/\//, "")}
+                </p>
+              </div>
 
-                    <p className="text-sm text-slate-500 truncate mt-1">
-                      {bookmark.url.replace(/^https?:\/\//, "")}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      deleteBookmark(bookmark.id, bookmark.title)
-                    }
-                    className="p-2 hover:bg-slate-100 rounded-md transition shrink-0"
-                  >
-                    <TrashIcon className="w-4 h-4 text-slate-500 hover:text-red-500 transition" />
-                  </button>
-                </div>
-              ))}
+              <button
+                onClick={() =>
+                  deleteBookmark(bookmark.id, bookmark.title)
+                }
+                className="p-2 hover:bg-slate-100 rounded-md"
+              >
+                <TrashIcon className="w-4 h-4 text-slate-500" />
+              </button>
             </div>
-          )}
-        </section>
+          ))}
+        </div>
       </main>
     </div>
   )
