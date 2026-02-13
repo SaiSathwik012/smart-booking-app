@@ -17,7 +17,13 @@ type Bookmark = {
   title: string
   url: string
   user_id: string
-  created_at: string
+  created_at?: string
+}
+
+type BookmarkInsert = {
+  title: string
+  url: string
+  user_id: string
 }
 
 type AuthUser = {
@@ -114,13 +120,15 @@ export default function Dashboard() {
 
     setSubmitting(true)
 
-    const { error } = await supabase.from("bookmarks").insert([
-      {
-        title: title.trim(),
-        url: formattedUrl,
-        user_id: user.id,
-      },
-    ])
+    const newBookmark: BookmarkInsert = {
+      title: title.trim(),
+      url: formattedUrl,
+      user_id: user.id,
+    }
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .insert([newBookmark])
 
     if (error) {
       toast.error("Failed to add bookmark")
@@ -186,19 +194,23 @@ export default function Dashboard() {
               className="flex-1 px-4 py-2 border border-slate-300 rounded-md"
             />
 
-            <input
-              type="text"
-              placeholder="https://example.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="flex-1 px-4 py-2 border border-slate-300 rounded-md"
-            />
+            <div className="relative flex-1">
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-md"
+              />
+            </div>
 
             <button
               type="submit"
+              disabled={submitting}
               className="bg-slate-900 text-white px-6 py-2 rounded-md"
             >
-              Add
+              {submitting ? "Adding..." : "Add"}
             </button>
           </div>
         </form>
@@ -214,9 +226,10 @@ export default function Dashboard() {
                   href={bookmark.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-slate-900 hover:underline truncate"
+                  className="font-medium text-slate-900 hover:underline truncate flex items-center gap-1"
                 >
                   {bookmark.title}
+                  <ArrowTopRightOnSquareIcon className="w-4 h-4 text-slate-400 shrink-0" />
                 </a>
                 <p className="text-sm text-slate-500 truncate">
                   {bookmark.url.replace(/^https?:\/\//, "")}
@@ -229,7 +242,7 @@ export default function Dashboard() {
                 }
                 className="p-2 hover:bg-slate-100 rounded-md"
               >
-                <TrashIcon className="w-4 h-4 text-slate-500" />
+                <TrashIcon className="w-4 h-4 text-slate-500 hover:text-red-500 transition" />
               </button>
             </div>
           ))}
