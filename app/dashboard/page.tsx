@@ -19,9 +19,14 @@ type Bookmark = {
   created_at: string
 }
 
-export default function Dashboard(): JSX.Element {
+type AuthUser = {
+  id: string
+  email?: string | null
+}
+
+export default function Dashboard() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [title, setTitle] = useState<string>("")
   const [url, setUrl] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
@@ -32,7 +37,7 @@ export default function Dashboard(): JSX.Element {
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null
 
-    const loadData = async (): Promise<void> => {
+    const loadData = async () => {
       const { data } = await supabase.auth.getUser()
       const currentUser = data.user
 
@@ -43,7 +48,7 @@ export default function Dashboard(): JSX.Element {
 
       setUser({
         id: currentUser.id,
-        email: currentUser.email ?? undefined,
+        email: currentUser.email,
       })
 
       const { data: bookmarksData, error } = await supabase
@@ -87,14 +92,14 @@ export default function Dashboard(): JSX.Element {
     }
   }, [router])
 
-  const handleSignOut = async (): Promise<void> => {
+  const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.replace("/") // ensures no back navigation
+    router.replace("/") // prevents back navigation
   }
 
   const addBookmark = async (
     e: React.FormEvent<HTMLFormElement>
-  ): Promise<void> => {
+  ) => {
     e.preventDefault()
 
     if (!user || !title.trim() || !url.trim()) {
@@ -131,7 +136,7 @@ export default function Dashboard(): JSX.Element {
   const deleteBookmark = async (
     id: string,
     bookmarkTitle: string
-  ): Promise<void> => {
+  ) => {
     if (!confirm(`Delete "${bookmarkTitle}"?`)) return
 
     const { error } = await supabase
@@ -169,7 +174,7 @@ export default function Dashboard(): JSX.Element {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="hidden sm:block text-sm text-slate-500 truncate max-w-[180px]">
+            <span className="hidden sm:block text-sm text-slate-500 truncate max-w-[200px]">
               {user?.email}
             </span>
             <button
@@ -184,7 +189,7 @@ export default function Dashboard(): JSX.Element {
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-10">
         {/* Add Bookmark */}
-        <form onSubmit={addBookmark} className="w-full">
+        <form onSubmit={addBookmark}>
           <div className="bg-white border border-slate-200 rounded-lg p-5 sm:p-6 flex flex-col gap-5">
             <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
               Add Bookmark
@@ -195,9 +200,7 @@ export default function Dashboard(): JSX.Element {
                 type="text"
                 placeholder="Title"
                 value={title}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setTitle(e.target.value)
-                }
+                onChange={(e) => setTitle(e.target.value)}
                 disabled={submitting}
                 className="flex-1 px-4 py-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
               />
@@ -208,9 +211,7 @@ export default function Dashboard(): JSX.Element {
                   type="text"
                   placeholder="https://example.com"
                   value={url}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setUrl(e.target.value)
-                  }
+                  onChange={(e) => setUrl(e.target.value)}
                   disabled={submitting}
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
@@ -249,7 +250,7 @@ export default function Dashboard(): JSX.Element {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {bookmarks.map((bookmark: Bookmark) => (
+              {bookmarks.map((bookmark) => (
                 <div
                   key={bookmark.id}
                   className="bg-white border border-slate-200 rounded-lg px-4 sm:px-5 py-4 hover:border-slate-300 hover:-translate-y-[1px] transition-all duration-150 flex items-center justify-between gap-4"
